@@ -1,0 +1,6 @@
+{
+  "name": "Melzinha & Cia - Gestão de Festas & Escalas",
+  "description": "Sistema interno de agendamento de festas infantis, controle de escalas de recreadores, gestão de clientes, sincronização com Google Agenda e relatórios financeiros.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
