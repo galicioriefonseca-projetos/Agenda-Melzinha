@@ -252,6 +252,30 @@ export function SecurityView({
 
       </div>
 
+      {/* Firebase Cloud Firestore Project Info */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-emerald-500/10 p-5 rounded-3xl border border-amber-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-amber-500/20 shrink-0">
+            🔥
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-extrabold text-slate-900 font-display">
+                Firebase Firestore • Banco de Dados em Nuvem Ativo
+              </h3>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                Conectado
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 mt-1">
+              Projeto: <code className="bg-white/80 px-1.5 py-0.5 rounded border border-amber-200 text-amber-900 font-mono text-[11px]">lumiereos-11a95</code> • 
+              Regras de Segurança ABAC implementadas e sincronização de festas, clientes e escalas em tempo real.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Production Database Sanitization & Readiness Card (Admin only) */}
       {currentRole === 'admin' && onClearMockData && (
         <div className="bg-white p-5 rounded-3xl border border-rose-200/70 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">

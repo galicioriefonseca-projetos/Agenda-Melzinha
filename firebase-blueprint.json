@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authenticated staff or administrator user profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Google or corporate email" },
+        "role": { "type": "string", "enum": ["admin", "coordenador", "recreador", "atendimento"] },
+        "isAdminMaster": { "type": "boolean", "description": "Flag for root system owner" },
+        "avatarUrl": { "type": "string", "description": "Profile picture URL" },
+        "provider": { "type": "string", "enum": ["google"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "googleId": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "role", "createdAt"]
+    },
+    "Party": {
+      "title": "Party",
+      "description": "Children's party or event booking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string", "description": "Reference code like MEL-2026-081" },
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "childName": { "type": "string" },
+        "childAge": { "type": "number" },
+        "theme": { "type": "string" },
+        "packageType": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "locationName": { "type": "string" },
+        "locationAddress": { "type": "string" },
+        "locationNeighborhood": { "type": "string" },
+        "locationCity": { "type": "string" },
+        "guestCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["confirmada", "em_negociacao", "concluida", "cancelada"] },
+        "totalPrice": { "type": "number" },
+        "depositPaid": { "type": "number" },
+        "remainingBalance": { "type": "number" },
+        "notes": { "type": "string" },
+        "recreadoresAssigned": { "type": "array" },
+        "checklist": { "type": "array" },
+        "googleCalendarSynced": { "type": "boolean" },
+        "googleCalendarEventUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "code", "clientName", "childName", "date", "startTime", "endTime", "status", "totalPrice"]
+    },
+    "Recreador": {
+      "title": "Recreador",
+      "description": "Party animator, magician, or face painter in the roster",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "artisticName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "specialties": { "type": "array" },
+        "baseFee": { "type": "number" },
+        "active": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "avatarBg": { "type": "string" },
+        "totalPartiesCount": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "name", "artisticName", "phone", "baseFee", "active"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Parent or customer profile and party history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "childName": { "type": "string" },
+        "childBirthDate": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "totalSpent": { "type": "number" },
+        "partyHistoryIds": { "type": "array" },
+        "notes": { "type": "string" },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "childName"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Security audit trace of system operations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "user": { "type": "string" },
+        "role": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "ip": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "user", "action", "details"]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "System operational and party notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string" },
+        "partyId": { "type": "string" }
+      },
+      "required": ["id", "title", "message", "timestamp", "read"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "24/7 hotline operational emergency or support ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "title": { "type": "string" },
+        "priority": { "type": "string", "enum": ["urgente", "alta", "media"] },
+        "status": { "type": "string", "enum": ["aberto", "em_atendimento", "resolvido"] },
+        "requesterName": { "type": "string" },
+        "requesterRole": { "type": "string" },
+        "phone": { "type": "string" },
+        "partyCode": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "resolutionNotes": { "type": "string" }
+      },
+      "required": ["id", "createdAt", "title", "priority", "status", "requesterName", "description"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Staff and administrator profiles with assigned roles"
+    },
+    "/parties/{partyId}": {
+      "schema": { "$ref": "#/entities/Party" },
+      "description": "Children's party bookings, schedules, staff rosters, and financial status"
+    },
+    "/recreadores/{recreadorId}": {
+      "schema": { "$ref": "#/entities/Recreador" },
+      "description": "Animators, magicians, and entertainers catalog"
+    },
+    "/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Client parent accounts and loyalty history"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Audit trace and traceability events"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/NotificationItem" },
+      "description": "Operational notifications and countdown reminders"
+    },
+    "/supportTickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "24h emergency and operational assistance tickets"
+    }
+  }
+}

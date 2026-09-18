@@ -12,6 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AuthUser } from '../types';
+import { loginWithGoogle } from '../lib/firebase';
 
 interface LoginViewProps {
   onLogin: (user: AuthUser, isFirstAdmin: boolean) => void;
@@ -36,17 +37,22 @@ export function LoginView({
     isFirstAdminSetup ? 'admin' : 'admin'
   );
 
-  // Quick sign-in with detected Google account
-  const handleQuickGoogleSignIn = (emailToUse: string, nameToUse: string) => {
+  // Quick sign-in with Google account via Firebase
+  const handleQuickGoogleSignIn = async (emailToUse: string, nameToUse: string) => {
     setIsLoading(true);
-    setTimeout(() => {
-      const existing = registeredUsers.find((u) => u.email.toLowerCase() === emailToUse.toLowerCase());
+    try {
+      const fbUser = await loginWithGoogle();
+      const actualEmail = fbUser?.email || emailToUse;
+      const actualName = fbUser?.displayName || nameToUse || actualEmail.split('@')[0];
+      const avatarUrl = fbUser?.photoURL || undefined;
+      const existing = registeredUsers.find((u) => u.email.toLowerCase() === actualEmail.toLowerCase());
       const now = new Date().toISOString();
 
       if (existing) {
         onLogin(
           {
             ...existing,
+            avatarUrl: avatarUrl || existing.avatarUrl,
             lastLoginAt: now,
           },
           false
@@ -54,21 +60,25 @@ export function LoginView({
       } else {
         const isMaster = isFirstAdminSetup || registeredUsers.filter(u => u.role === 'admin').length === 0;
         const newUser: AuthUser = {
-          id: `usr-${Date.now()}`,
-          name: nameToUse || emailToUse.split('@')[0],
-          email: emailToUse,
+          id: fbUser?.uid || `usr-${Date.now()}`,
+          name: actualName,
+          email: actualEmail,
+          avatarUrl,
           role: isMaster ? 'admin' : selectedRole,
           isAdminMaster: isMaster,
           provider: 'google',
           createdAt: now,
           lastLoginAt: now,
           isFirstAccess: true,
-          googleId: `google-uid-${Math.floor(100000 + Math.random() * 900000)}`,
+          googleId: fbUser?.uid || `google-uid-${Math.floor(100000 + Math.random() * 900000)}`,
         };
         onLogin(newUser, isMaster);
       }
+    } catch (err) {
+      console.warn('Erro ao autenticar com Google:', err);
+    } finally {
       setIsLoading(false);
-    }, 600);
+    }
   };
 
   const handleCustomGoogleSubmit = (e: React.FormEvent) => {

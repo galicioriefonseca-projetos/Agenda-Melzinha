@@ -24,6 +24,29 @@ import { RecreadorModal } from './components/RecreadorModal';
 import { ClientModal } from './components/ClientModal';
 import { TwoFactorModal } from './components/TwoFactorModal';
 import { LoginView } from './components/LoginView';
+import {
+  testFirestoreConnection,
+  subscribeToParties,
+  savePartyToFirestore,
+  deletePartyFromFirestore,
+  subscribeToStaff,
+  saveStaffToFirestore,
+  deleteStaffFromFirestore,
+  subscribeToClients,
+  saveClientToFirestore,
+  deleteClientFromFirestore,
+  subscribeToAuditLogs,
+  saveAuditLogToFirestore,
+  subscribeToNotifications,
+  saveNotificationToFirestore,
+  markNotificationAsReadInFirestore,
+  subscribeToSupportTickets,
+  saveSupportTicketToFirestore,
+  updateSupportTicketInFirestore,
+  subscribeToUsers,
+  saveUserToFirestore,
+  logoutFirebase
+} from './lib/firebase';
 
 const ROLE_ALLOWED_TABS: Record<UserRole, TabType[]> = {
   admin: ['agenda', 'escalas', 'clientes', 'financeiro', 'seguranca', 'suporte'],
@@ -167,6 +190,63 @@ export default function App() {
     localStorage.setItem('melzinha_users_db', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
+  // Real-time synchronization with Firebase Firestore
+  useEffect(() => {
+    testFirestoreConnection();
+
+    const unsubParties = subscribeToParties((cloudParties) => {
+      if (cloudParties) {
+        setParties(cloudParties);
+      }
+    });
+
+    const unsubStaff = subscribeToStaff((cloudStaff) => {
+      if (cloudStaff) {
+        setStaffList(cloudStaff);
+      }
+    });
+
+    const unsubClients = subscribeToClients((cloudClients) => {
+      if (cloudClients) {
+        setClients(cloudClients);
+      }
+    });
+
+    const unsubLogs = subscribeToAuditLogs((cloudLogs) => {
+      if (cloudLogs && cloudLogs.length > 0) {
+        setAuditLogs(cloudLogs);
+      }
+    });
+
+    const unsubNotifs = subscribeToNotifications((cloudNotifs) => {
+      if (cloudNotifs) {
+        setNotifications(cloudNotifs);
+      }
+    });
+
+    const unsubTickets = subscribeToSupportTickets((cloudTickets) => {
+      if (cloudTickets) {
+        setTickets(cloudTickets);
+      }
+    });
+
+    const unsubUsers = subscribeToUsers((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        setRegisteredUsers(cloudUsers);
+      }
+    });
+
+    return () => {
+      unsubParties();
+      unsubStaff();
+      unsubClients();
+      unsubLogs();
+      unsubNotifs();
+      unsubTickets();
+      unsubUsers();
+    };
+  }, []);
+
   // Helper to add audit log
   const logAction = (
     action: string,
@@ -185,6 +265,7 @@ export default function App() {
       category,
     };
     setAuditLogs((prev) => [newLog, ...prev]);
+    saveAuditLogToFirestore(newLog).catch(err => console.warn('Erro ao salvar log no Firestore:', err));
   };
 
   const handleLogin = (user: AuthUser, isFirstAdmin: boolean) => {
@@ -198,6 +279,8 @@ export default function App() {
       }
       return [...prev, user];
     });
+
+    saveUserToFirestore(user).catch(err => console.warn('Erro ao salvar usuário no Firestore:', err));
 
     if (isFirstAdmin) {
       confetti({
@@ -227,6 +310,7 @@ export default function App() {
         'segurança'
       );
     }
+    logoutFirebase().catch(err => console.warn('Logout Firebase:', err));
     setCurrentUser(null);
   };
 
@@ -236,13 +320,16 @@ export default function App() {
     id?: string
   ) => {
     if (id) {
+      const updatedParty: Party = {
+        ...partyData,
+        id,
+        createdAt: parties.find(p => p.id === id)?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
       setParties((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? { ...p, ...partyData, updatedAt: new Date().toISOString() }
-            : p
-        )
+        prev.map((p) => (p.id === id ? updatedParty : p))
       );
+      savePartyToFirestore(updatedParty).catch(err => console.warn('Erro ao salvar festa no Firestore:', err));
       logAction('Edição de Festa', `Festa ${partyData.code} (${partyData.childName}) atualizada.`, 'agendamento');
     } else {
       const newParty: Party = {
@@ -252,6 +339,7 @@ export default function App() {
         updatedAt: new Date().toISOString(),
       };
       setParties((prev) => [newParty, ...prev]);
+      savePartyToFirestore(newParty).catch(err => console.warn('Erro ao salvar nova festa no Firestore:', err));
       logAction('Nova Festa Agendada', `Festa ${partyData.code} criada para ${partyData.childName} (${partyData.theme}).`, 'agendamento');
 
       // Add celebratory confetti
@@ -273,6 +361,7 @@ export default function App() {
         partyId: newParty.id,
       };
       setNotifications((prev) => [newNotif, ...prev]);
+      saveNotificationToFirestore(newNotif).catch(err => console.warn('Erro ao salvar notificação no Firestore:', err));
     }
   };
 
@@ -280,12 +369,14 @@ export default function App() {
     setParties((prev) =>
       prev.map((p) => {
         if (p.id !== partyId) return p;
-        return {
+        const updated = {
           ...p,
           checklist: p.checklist.map((item) =>
             item.id === itemId ? { ...item, done: !item.done } : item
           ),
         };
+        savePartyToFirestore(updated).catch(err => console.warn('Erro ao atualizar checklist:', err));
+        return updated;
       })
     );
   };
@@ -294,12 +385,14 @@ export default function App() {
     setParties((prev) =>
       prev.map((p) => {
         if (p.id !== partyId) return p;
-        return {
+        const updated = {
           ...p,
           recreadoresAssigned: p.recreadoresAssigned.map((a) =>
             a.recreadorId === recreadorId ? { ...a, confirmed: !a.confirmed } : a
           ),
         };
+        savePartyToFirestore(updated).catch(err => console.warn('Erro ao atualizar confirmação:', err));
+        return updated;
       })
     );
     logAction('Confirmação de Presença', `Status de presença alternado na festa para recreador.`, 'escala');
@@ -308,11 +401,14 @@ export default function App() {
   // Recreador handlers
   const handleSaveRecreador = (data: Omit<Recreador, 'id'>, id?: string) => {
     if (id) {
-      setStaffList((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
+      const updatedStaff: Recreador = { ...data, id };
+      setStaffList((prev) => prev.map((s) => (s.id === id ? updatedStaff : s)));
+      saveStaffToFirestore(updatedStaff).catch(err => console.warn('Erro ao atualizar recreador no Firestore:', err));
       logAction('Edição de Recreador', `Dados de ${data.artisticName} atualizados.`, 'escala');
     } else {
       const newStaff: Recreador = { ...data, id: `rec-${Date.now()}` };
       setStaffList((prev) => [...prev, newStaff]);
+      saveStaffToFirestore(newStaff).catch(err => console.warn('Erro ao salvar recreador no Firestore:', err));
       logAction('Novo Recreador', `Recreador ${data.artisticName} (${data.name}) cadastrado no quadro.`, 'escala');
     }
   };
@@ -320,7 +416,14 @@ export default function App() {
   // Client handlers
   const handleSaveClient = (data: Omit<Client, 'id' | 'createdAt'>, id?: string) => {
     if (id) {
-      setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
+      const existingClient = clients.find(c => c.id === id);
+      const updatedClient: Client = {
+        ...data,
+        id,
+        createdAt: existingClient?.createdAt || new Date().toISOString(),
+      };
+      setClients((prev) => prev.map((c) => (c.id === id ? updatedClient : c)));
+      saveClientToFirestore(updatedClient).catch(err => console.warn('Erro ao atualizar cliente no Firestore:', err));
       logAction('Edição de Cliente', `Cadastro de ${data.name} atualizado.`, 'agendamento');
     } else {
       const newClient: Client = {
@@ -329,6 +432,7 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
       setClients((prev) => [...prev, newClient]);
+      saveClientToFirestore(newClient).catch(err => console.warn('Erro ao salvar cliente no Firestore:', err));
       logAction('Novo Cliente', `Cliente ${data.name} (Aniversariante: ${data.childName}) cadastrado.`, 'agendamento');
     }
   };
@@ -353,6 +457,7 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
     setTickets((prev) => [newTicket, ...prev]);
+    saveSupportTicketToFirestore(newTicket).catch(err => console.warn('Erro ao salvar chamado no Firestore:', err));
     logAction('Abertura de Chamado Plantão', `Chamado aberto: ${ticketData.title} (${ticketData.priority}).`, 'sistema');
   };
 
@@ -364,6 +469,7 @@ export default function App() {
           : t
       )
     );
+    updateSupportTicketInFirestore(ticketId, { status: 'resolvido', resolutionNotes: notes }).catch(err => console.warn('Erro ao resolver chamado no Firestore:', err));
     logAction('Chamado Solucionado', `Chamado ${ticketId} marcado como resolvido.`, 'sistema');
   };
 
@@ -371,10 +477,12 @@ export default function App() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    markNotificationAsReadInFirestore(id).catch(err => console.warn('Erro ao atualizar notificação:', err));
   };
 
   const handleDeleteParty = (partyId: string) => {
     setParties((prev) => prev.filter((p) => p.id !== partyId));
+    deletePartyFromFirestore(partyId).catch(err => console.warn('Erro ao excluir festa do Firestore:', err));
     logAction('Exclusão de Festa', `Festa ID ${partyId} foi excluída pelo Administrador.`, 'agendamento');
   };
 

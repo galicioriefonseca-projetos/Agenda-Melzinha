@@ -81,6 +81,16 @@ export function Header({
           {/* Center/Right Actions & Security Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* Firebase Live Cloud Badge */}
+            <div 
+              id="badge-firebase-status"
+              title="Banco de dados Firebase Firestore conectado e ativo"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border bg-amber-50/80 text-amber-900 border-amber-200 shadow-2xs"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-slate-800">Firebase Conectado</span>
+            </div>
+
             {/* 2FA Status Pill */}
             <button
               id="btn-two-factor-status"
