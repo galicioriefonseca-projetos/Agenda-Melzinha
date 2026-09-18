@@ -270,7 +270,10 @@ export function SecurityView({
             </div>
             <p className="text-xs text-slate-600 mt-1">
               Projeto: <code className="bg-white/80 px-1.5 py-0.5 rounded border border-amber-200 text-amber-900 font-mono text-[11px]">lumiereos-11a95</code> • 
-              Regras de Segurança ABAC implementadas e sincronização de festas, clientes e escalas em tempo real.
+              Banco Dedicado e Isolado: <code className="bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-300 text-emerald-900 font-mono text-[11px]">ai-studio-melzinhaciagesto-7bc5b707-7d4b-47e3-bc4d-6487cb69069b</code>
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              100% separado dos demais bancos: coleções exclusivas de festas, clientes, escalas e chamados.
             </p>
           </div>
         </div>
