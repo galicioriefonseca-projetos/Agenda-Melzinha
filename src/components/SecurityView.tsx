@@ -25,6 +25,7 @@ interface SecurityViewProps {
   auditLogs: AuditLog[];
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
+  onClearMockData?: () => void;
 }
 
 export function SecurityView({
@@ -33,6 +34,7 @@ export function SecurityView({
   auditLogs,
   currentRole,
   setCurrentRole,
+  onClearMockData,
 }: SecurityViewProps) {
   const [logFilter, setLogFilter] = useState<string>('all');
   const [searchLog, setSearchLog] = useState<string>('');
@@ -250,6 +252,36 @@ export function SecurityView({
 
       </div>
 
+      {/* Production Database Sanitization & Readiness Card (Admin only) */}
+      {currentRole === 'admin' && onClearMockData && (
+        <div className="bg-white p-5 rounded-3xl border border-rose-200/70 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+              <RefreshCw className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 font-display">
+                Sanitização de Dados • Ambiente de Produção Limpo
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5 max-w-2xl">
+                Seu sistema está pronto para uso operacional real sem dados de demonstração. Caso deseje redefinir e garantir que nenhuma informação de teste resida no banco de dados local, utilize a limpeza de dados abaixo.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              if (window.confirm('Tem certeza que deseja zerar os dados de teste e iniciar um banco de dados totalmente limpo para produção?')) {
+                onClearMockData();
+              }
+            }}
+            className="px-4 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors whitespace-nowrap"
+          >
+            Zerar Dados & Iniciar Produção
+          </button>
+        </div>
+      )}
+
       {/* Real-time Audit Logs & Traceability Table */}
       <div className="bg-white p-5 rounded-3xl border border-amber-100 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -304,27 +336,35 @@ export function SecurityView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="p-3 text-slate-700 font-mono whitespace-nowrap">
-                    {new Date(log.timestamp).toLocaleString('pt-BR')}
-                  </td>
-                  <td className="p-3 font-semibold text-slate-800">
-                    {log.user}
-                  </td>
-                  <td className="p-3">
-                    <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-700 leading-relaxed max-w-md">
-                    {log.details}
-                  </td>
-                  <td className="p-3 text-slate-700 font-mono text-[11px]">
-                    {log.ip}
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500">
+                    Nenhum registro de auditoria encontrado para o filtro selecionado.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="p-3 text-slate-700 font-mono whitespace-nowrap">
+                      {new Date(log.timestamp).toLocaleString('pt-BR')}
+                    </td>
+                    <td className="p-3 font-semibold text-slate-800">
+                      {log.user}
+                    </td>
+                    <td className="p-3">
+                      <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="p-3 text-slate-700 leading-relaxed max-w-md">
+                      {log.details}
+                    </td>
+                    <td className="p-3 text-slate-700 font-mono text-[11px]">
+                      {log.ip}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

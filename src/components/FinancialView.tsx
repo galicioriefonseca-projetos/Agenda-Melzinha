@@ -238,36 +238,42 @@ export function FinancialView({ parties, staffList, currentRole }: FinancialView
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100">
-            {staffPerformance.map((staff, index) => {
-              return (
-                <div key={staff.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${staff.avatarBg}`}>
-                      {index + 1}º
+          {staffPerformance.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-500">
+              Nenhum recreador cadastrado para apuração de comissões e cachês.
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {staffPerformance.map((staff, index) => {
+                return (
+                  <div key={staff.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${staff.avatarBg}`}>
+                        {index + 1}º
+                      </div>
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                          {staff.artisticName}
+                        </h4>
+                        <p className="text-[11px] text-slate-700">
+                          {staff.partiesCount} festa(s) escalada(s) • Média {staff.rating.toFixed(1)} ★
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                        {staff.artisticName}
-                      </h4>
-                      <p className="text-[11px] text-slate-700">
-                        {staff.partiesCount} festa(s) escalada(s) • Média {staff.rating.toFixed(1)} ★
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="text-right">
-                    <span className="text-xs font-black text-slate-900 block">
-                      R$ {staff.totalEarned.toFixed(2)}
-                    </span>
-                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                      Cachê acumulado
-                    </span>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-900 block">
+                        R$ {staff.totalEarned.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                        Cachê acumulado
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Theme Breakdown (5 cols) */}
@@ -282,27 +288,33 @@ export function FinancialView({ parties, staffList, currentRole }: FinancialView
             </p>
           </div>
 
-          <div className="space-y-3">
-            {themeBreakdown.map(([theme, data], index) => {
-              const percentage = metrics.totalRevenue > 0 ? (data.total / metrics.totalRevenue) * 100 : 0;
-              return (
-                <div key={index} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-800 font-bold truncate max-w-[200px]">{theme}</span>
-                    <span className="text-slate-600">
-                      {data.count}x • R$ {data.total.toLocaleString('pt-BR')} ({percentage.toFixed(0)}%)
-                    </span>
+          {themeBreakdown.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-500">
+              Aguardando primeiras festas agendadas para consolidar distribuição por tema.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {themeBreakdown.map(([theme, data], index) => {
+                const percentage = metrics.totalRevenue > 0 ? (data.total / metrics.totalRevenue) * 100 : 0;
+                return (
+                  <div key={index} className="space-y-1">
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-slate-800 font-bold truncate max-w-[200px]">{theme}</span>
+                      <span className="text-slate-600">
+                        {data.count}x • R$ {data.total.toLocaleString('pt-BR')} ({percentage.toFixed(0)}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
       </div>

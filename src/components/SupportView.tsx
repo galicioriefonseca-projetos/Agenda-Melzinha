@@ -33,8 +33,8 @@ export function SupportView({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<SupportTicket['category']>('substituicao_urgente');
   const [priority, setPriority] = useState<SupportTicket['priority']>('urgente');
-  const [requesterName, setRequesterName] = useState('Melissa Silveira (Admin)');
-  const [phone, setPhone] = useState('(11) 98765-4321');
+  const [requesterName, setRequesterName] = useState('');
+  const [phone, setPhone] = useState('');
   const [partyCode, setPartyCode] = useState('');
   const [description, setDescription] = useState('');
   const [resolvingTicketId, setResolvingTicketId] = useState<string | null>(null);
@@ -153,103 +153,124 @@ export function SupportView({
           </div>
         </div>
 
-        <div className="divide-y divide-slate-100">
-          {tickets.map((ticket) => {
-            const isResolving = resolvingTicketId === ticket.id;
+        {tickets.length === 0 ? (
+          <div className="py-12 px-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+            <h4 className="text-base font-bold text-slate-900 font-display">
+              Nenhum chamado operacional em aberto
+            </h4>
+            <p className="text-xs text-slate-600 max-w-md mx-auto mt-1 mb-5">
+              O canal de emergência e plantão 24h está ativo e pronto para registrar ocorrências, imprevistos de trânsito ou reposições de monitores da sua equipe.
+            </p>
+            <button
+              onClick={() => setShowNewTicketModal(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md transition-all hover:scale-[1.02]"
+            >
+              <AlertCircle className="w-4 h-4 text-amber-400" />
+              <span>Abrir Novo Chamado</span>
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {tickets.map((ticket) => {
+              const isResolving = resolvingTicketId === ticket.id;
 
-            return (
-              <div key={ticket.id} className="py-4 space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                      ticket.priority === 'urgente' 
-                        ? 'bg-rose-100 text-rose-800' 
-                        : ticket.priority === 'alta'
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {ticket.priority}
+              return (
+                <div key={ticket.id} className="py-4 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                        ticket.priority === 'urgente' 
+                          ? 'bg-rose-100 text-rose-800' 
+                          : ticket.priority === 'alta'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {ticket.priority}
+                      </span>
+
+                      <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
+                        ticket.status === 'resolvido' 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : ticket.status === 'em_atendimento'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {ticket.status === 'resolvido' ? '✅ Resolvido' : ticket.status === 'em_atendimento' ? '⚡ Em Atendimento' : '🕒 Aberto'}
+                      </span>
+
+                      <h4 className="text-sm font-bold text-slate-900">
+                        {ticket.title}
+                      </h4>
+                    </div>
+
+                    <span className="text-[11px] text-slate-700 font-mono">
+                      {new Date(ticket.createdAt).toLocaleString('pt-BR')}
                     </span>
-
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${
-                      ticket.status === 'resolvido' 
-                        ? 'bg-emerald-100 text-emerald-800' 
-                        : ticket.status === 'em_atendimento'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {ticket.status === 'resolvido' ? '✅ Resolvido' : ticket.status === 'em_atendimento' ? '⚡ Em Atendimento' : '🕒 Aberto'}
-                    </span>
-
-                    <h4 className="text-sm font-bold text-slate-900">
-                      {ticket.title}
-                    </h4>
                   </div>
 
-                  <span className="text-[11px] text-slate-700 font-mono">
-                    {new Date(ticket.createdAt).toLocaleString('pt-BR')}
-                  </span>
-                </div>
+                  <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
+                    {ticket.description}
+                  </p>
 
-                <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
-                  {ticket.description}
-                </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700 pt-1">
+                    <div className="flex items-center gap-3">
+                      <span>Solicitante: <strong>{ticket.requesterName}</strong></span>
+                      <span>Tel: <strong>{ticket.phone}</strong></span>
+                      {ticket.partyCode && (
+                        <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded font-bold">
+                          Festa: {ticket.partyCode}
+                        </span>
+                      )}
+                    </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700 pt-1">
-                  <div className="flex items-center gap-3">
-                    <span>Solicitante: <strong>{ticket.requesterName}</strong></span>
-                    <span>Tel: <strong>{ticket.phone}</strong></span>
-                    {ticket.partyCode && (
-                      <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded font-bold">
-                        Festa: {ticket.partyCode}
-                      </span>
+                    {ticket.status !== 'resolvido' && currentRole !== 'recreador' && (
+                      <button
+                        onClick={() => setResolvingTicketId(isResolving ? null : ticket.id)}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors"
+                      >
+                        {isResolving ? 'Cancelar' : 'Solucionar Chamado'}
+                      </button>
                     )}
                   </div>
 
-                  {ticket.status !== 'resolvido' && currentRole !== 'recreador' && (
-                    <button
-                      onClick={() => setResolvingTicketId(isResolving ? null : ticket.id)}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors"
-                    >
-                      {isResolving ? 'Cancelar' : 'Solucionar Chamado'}
-                    </button>
-                  )}
-                </div>
-
-                {ticket.resolutionNotes && (
-                  <div className="mt-2 text-xs bg-emerald-50 text-emerald-900 p-2.5 rounded-xl border border-emerald-200">
-                    <strong>Resolução:</strong> {ticket.resolutionNotes}
-                  </div>
-                )}
-
-                {/* Resolve Box */}
-                {isResolving && (
-                  <div className="mt-2 p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
-                    <p className="text-xs font-bold text-slate-800">
-                      Adicionar notas de solução para o chamado:
-                    </p>
-                    <textarea
-                      value={resolutionText}
-                      onChange={(e) => setResolutionText(e.target.value)}
-                      placeholder="Ex: Novo recreador acionado, chegou ao buffet às 13:45..."
-                      className="w-full text-xs p-2 rounded-lg border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      rows={2}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleConfirmResolve(ticket.id)}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg"
-                      >
-                        Confirmar Resolução
-                      </button>
+                  {ticket.resolutionNotes && (
+                    <div className="mt-2 text-xs bg-emerald-50 text-emerald-900 p-2.5 rounded-xl border border-emerald-200">
+                      <strong>Resolução:</strong> {ticket.resolutionNotes}
                     </div>
-                  </div>
-                )}
+                  )}
 
-              </div>
-            );
-          })}
-        </div>
+                  {/* Resolve Box */}
+                  {isResolving && (
+                    <div className="mt-2 p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                      <p className="text-xs font-bold text-slate-800">
+                        Adicionar notas de solução para o chamado:
+                      </p>
+                      <textarea
+                        value={resolutionText}
+                        onChange={(e) => setResolutionText(e.target.value)}
+                        placeholder="Ex: Novo recreador acionado, chegou ao buffet às 13:45..."
+                        className="w-full text-xs p-2 rounded-lg border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        rows={2}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleConfirmResolve(ticket.id)}
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg"
+                        >
+                          Confirmar Resolução
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* New Ticket Modal */}

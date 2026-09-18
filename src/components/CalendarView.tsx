@@ -19,7 +19,9 @@ import {
   Download,
   CalendarCheck,
   ChevronRight,
-  Smile
+  Smile,
+  Compass,
+  Trash2
 } from 'lucide-react';
 import { Party, Recreador, PartyStatus, UserRole } from '../types';
 import { generateGoogleCalendarUrl, downloadIcsFile } from '../utils/googleCalendar';
@@ -31,6 +33,8 @@ interface CalendarViewProps {
   onOpenPartyModal: (party?: Party) => void;
   onSelectPartyForPrint: (party: Party) => void;
   onToggleChecklistItem: (partyId: string, itemId: string) => void;
+  onToggleRecreadorConfirmation?: (partyId: string, recreadorId: string) => void;
+  onDeleteParty?: (partyId: string) => void;
   currentRole: UserRole;
 }
 
@@ -40,6 +44,8 @@ export function CalendarView({
   onOpenPartyModal,
   onSelectPartyForPrint,
   onToggleChecklistItem,
+  onToggleRecreadorConfirmation,
+  onDeleteParty,
   currentRole,
 }: CalendarViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -174,15 +180,17 @@ export function CalendarView({
 
           {/* Quick Action Buttons: Export & New Party */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              id="btn-export-csv"
-              onClick={() => exportPartiesToCsv(parties, staffList)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
-              title="Exportar dados para planilha Excel / CSV"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-              <span>Exportar Planilha</span>
-            </button>
+            {['admin', 'coordenador'].includes(currentRole) && (
+              <button
+                id="btn-export-csv"
+                onClick={() => exportPartiesToCsv(parties, staffList)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
+                title="Exportar dados para planilha Excel / CSV"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>Exportar Planilha</span>
+              </button>
+            )}
 
             {currentRole !== 'recreador' && (
               <button
@@ -252,14 +260,35 @@ export function CalendarView({
 
       {/* Party Cards List */}
       <div className="space-y-4">
-        {filteredParties.length === 0 ? (
+        {parties.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 text-center border border-amber-100 shadow-xs">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-3 shadow-inner">
+              <Sparkles className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 font-display">
+              Sistema Pronto para Produção: Nenhuma festa agendada
+            </h3>
+            <p className="text-xs text-slate-600 max-w-md mx-auto mt-1 mb-5">
+              O banco de dados está limpo e preparado para o dia a dia da Melzinha & Cia. Agende sua primeira festa para gerenciar clientes, escalas de recreadores, ordens de serviço e checklists.
+            </p>
+            {currentRole !== 'recreador' && (
+              <button
+                onClick={() => onOpenPartyModal()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Agendar Primeira Festa</span>
+              </button>
+            )}
+          </div>
+        ) : filteredParties.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-amber-100 shadow-xs">
             <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-3">
               <Smile className="w-8 h-8" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">Nenhuma festa encontrada</h3>
+            <h3 className="text-base font-bold text-slate-800">Nenhuma festa encontrada com os filtros</h3>
             <p className="text-xs text-slate-700 max-w-sm mx-auto mt-1">
-              Experimente ajustar os filtros ou agende uma nova comemoração cheia de diversão!
+              Experimente ajustar os filtros de status ou data para visualizar as comemorações.
             </p>
           </div>
         ) : (
@@ -402,9 +431,19 @@ export function CalendarView({
                                     <p className="text-[10px] text-slate-700">{assigned.role}</p>
                                   </div>
                                 </div>
-                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                  R$ {assigned.fee}
-                                </span>
+                                {currentRole === 'recreador' ? (
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                    assigned.confirmed 
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}>
+                                    {assigned.confirmed ? 'Confirmado' : 'Pendente'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                    R$ {assigned.fee}
+                                  </span>
+                                )}
                               </div>
                             );
                           })}
@@ -421,51 +460,122 @@ export function CalendarView({
                       </button>
                     </div>
 
-                    {/* Col 3: Financials & Action Buttons (3 cols) */}
-                    <div className="lg:col-span-3 flex flex-col justify-between h-full bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
-                      <div>
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                          Financeiro da Festa
-                        </span>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between text-slate-600">
-                            <span>Valor Total:</span>
-                            <span className="font-bold text-slate-800">R$ {party.totalPrice.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-emerald-700">
-                            <span>Sinal Pago:</span>
-                            <span className="font-semibold">R$ {party.depositPaid.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-rose-600 font-bold pt-1 border-t border-slate-200">
-                            <span>Saldo Restante:</span>
-                            <span>R$ {party.remainingBalance.toFixed(2)}</span>
+                    {/* Col 3: Financials OR Operational Recreador Box */}
+                    {currentRole === 'recreador' ? (
+                      <div className="lg:col-span-3 flex flex-col justify-between h-full bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/70">
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider block mb-1">
+                            Orientação de Campo
+                          </span>
+                          <div className="space-y-1.5 text-xs text-slate-700">
+                            <div className="p-2 rounded-lg bg-white border border-amber-200/80">
+                              <span className="text-[10px] text-slate-500 block">Horário no Local:</span>
+                              <span className="font-bold text-slate-900 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                {party.startTime} às {party.endTime}
+                              </span>
+                              <span className="text-[10px] text-amber-700 font-medium block mt-0.5">
+                                ⚠️ Chegar 30 min antes para montagem.
+                              </span>
+                            </div>
+
+                            {/* Attendance Action for Recreador */}
+                            {onToggleRecreadorConfirmation && party.recreadoresAssigned.length > 0 && (
+                              <div className="pt-1">
+                                {party.recreadoresAssigned.map((assigned, aIdx) => {
+                                  const staff = staffList.find((s) => s.id === assigned.recreadorId);
+                                  return (
+                                    <button
+                                      key={aIdx}
+                                      onClick={() => onToggleRecreadorConfirmation(party.id, assigned.recreadorId)}
+                                      className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                                        assigned.confirmed
+                                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                          : 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+                                      }`}
+                                      title="Alternar confirmação de presença"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      <span>
+                                        {assigned.confirmed
+                                          ? `Presença OK (${staff?.artisticName || 'Escala'})`
+                                          : `Confirmar Presença (${staff?.artisticName || 'Escala'})`}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
+
+                        {/* Action Buttons: Maps & Order Sheet */}
+                        <div className="pt-3 border-t border-amber-200/80 flex items-center justify-between gap-1.5 mt-2">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${party.locationAddress}, ${party.locationNeighborhood}, ${party.locationCity}`)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-amber-200 text-slate-800 hover:bg-amber-100/50 transition-colors"
+                            title="Abrir no Google Maps / Waze"
+                          >
+                            <Compass className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Rota Maps</span>
+                          </a>
+
+                          <button
+                            onClick={() => onSelectPartyForPrint(party)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-amber-200 text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs"
+                            title="Visualizar Ficha de Ordem de Serviço"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-slate-700" />
+                            <span>Ficha</span>
+                          </button>
+                        </div>
                       </div>
+                    ) : (
+                      <div className="lg:col-span-3 flex flex-col justify-between h-full bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                            Financeiro da Festa
+                          </span>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Valor Total:</span>
+                              <span className="font-bold text-slate-800">R$ {party.totalPrice.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-emerald-700">
+                              <span>Sinal Pago:</span>
+                              <span className="font-semibold">R$ {party.depositPaid.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-rose-600 font-bold pt-1 border-t border-slate-200">
+                              <span>Saldo Restante:</span>
+                              <span>R$ {party.remainingBalance.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                      {/* Action Buttons */}
-                      <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between gap-1.5">
-                        {/* WhatsApp Button */}
-                        <button
-                          onClick={() => openWhatsApp(party.clientPhone, party)}
-                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="Enviar confirmação no WhatsApp do cliente"
-                        >
-                          <Phone className="w-4 h-4" />
-                        </button>
+                        {/* Action Buttons */}
+                        <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between gap-1.5">
+                          {/* WhatsApp Button */}
+                          <button
+                            onClick={() => openWhatsApp(party.clientPhone, party)}
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            title="Enviar confirmação no WhatsApp do cliente"
+                          >
+                            <Phone className="w-4 h-4" />
+                          </button>
 
-                        {/* Printable Order Sheet (PDF) */}
-                        <button
-                          onClick={() => onSelectPartyForPrint(party)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs"
-                          title="Imprimir ou exportar Ficha de Ordem de Serviço em PDF"
-                        >
-                          <Printer className="w-3.5 h-3.5 text-slate-700" />
-                          <span>Ficha PDF</span>
-                        </button>
+                          {/* Printable Order Sheet (PDF) */}
+                          <button
+                            onClick={() => onSelectPartyForPrint(party)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs"
+                            title="Imprimir ou exportar Ficha de Ordem de Serviço em PDF"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-slate-700" />
+                            <span>Ficha PDF</span>
+                          </button>
 
-                        {/* Edit Button */}
-                        {currentRole !== 'recreador' && (
+                          {/* Edit Button */}
                           <button
                             onClick={() => onOpenPartyModal(party)}
                             className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors shadow-2xs"
@@ -473,10 +583,24 @@ export function CalendarView({
                           >
                             Editar
                           </button>
-                        )}
-                      </div>
 
-                    </div>
+                          {/* Admin Delete Button */}
+                          {currentRole === 'admin' && onDeleteParty && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Tem certeza que deseja excluir a festa ${party.code} (${party.childName})?`)) {
+                                  onDeleteParty(party.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
+                              title="Excluir Festa (Apenas Administrador Master)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                   </div>
 

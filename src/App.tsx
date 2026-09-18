@@ -10,14 +10,6 @@ import {
   UserRole,
   AuthUser 
 } from './types';
-import { 
-  INITIAL_PARTIES, 
-  INITIAL_RECREADORES, 
-  INITIAL_CLIENTS, 
-  INITIAL_AUDIT_LOGS, 
-  INITIAL_NOTIFICATIONS, 
-  INITIAL_SUPPORT_TICKETS 
-} from './data/mockData';
 import { Header } from './components/Header';
 import { Navigation, TabType } from './components/Navigation';
 import { CalendarView } from './components/CalendarView';
@@ -33,6 +25,35 @@ import { ClientModal } from './components/ClientModal';
 import { TwoFactorModal } from './components/TwoFactorModal';
 import { LoginView } from './components/LoginView';
 
+const ROLE_ALLOWED_TABS: Record<UserRole, TabType[]> = {
+  admin: ['agenda', 'escalas', 'clientes', 'financeiro', 'seguranca', 'suporte'],
+  coordenador: ['agenda', 'escalas', 'clientes', 'suporte'],
+  recreador: ['agenda', 'suporte'],
+  atendimento: ['agenda', 'clientes', 'suporte'],
+};
+
+// Helper to filter out any mock/fictitious items from local storage to ensure clean production
+function loadCleanData<T extends { id?: string }>(key: string): T[] {
+  const saved = localStorage.getItem(key);
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed)) {
+      // Discard legacy mock entries (pty-1..5, rec-1..5, cli-1..3, tkt-1..2, log-1..4)
+      return parsed.filter((item: any) => {
+        if (!item || !item.id) return false;
+        if (/^(pty-[1-5]|rec-[1-5]|cli-[1-3]|tkt-[1-2]|log-[1-4])$/.test(item.id)) {
+          return false;
+        }
+        return true;
+      });
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 export default function App() {
   // Authentication & Users State
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
@@ -47,36 +68,29 @@ export default function App() {
 
   const [welcomeBannerDismissed, setWelcomeBannerDismissed] = useState(false);
 
-  // Persistence in localStorage
-  const [parties, setParties] = useState<Party[]>(() => {
-    const saved = localStorage.getItem('melzinha_parties');
-    return saved ? JSON.parse(saved) : INITIAL_PARTIES;
-  });
-
-  const [staffList, setStaffList] = useState<Recreador[]>(() => {
-    const saved = localStorage.getItem('melzinha_staff');
-    return saved ? JSON.parse(saved) : INITIAL_RECREADORES;
-  });
-
-  const [clients, setClients] = useState<Client[]>(() => {
-    const saved = localStorage.getItem('melzinha_clients');
-    return saved ? JSON.parse(saved) : INITIAL_CLIENTS;
-  });
-
+  // Persistence in localStorage - Starts completely clean without fictitious data
+  const [parties, setParties] = useState<Party[]>(() => loadCleanData<Party>('melzinha_parties'));
+  const [staffList, setStaffList] = useState<Recreador[]>(() => loadCleanData<Recreador>('melzinha_staff'));
+  const [clients, setClients] = useState<Client[]>(() => loadCleanData<Client>('melzinha_clients'));
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem('melzinha_audit_logs');
-    return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
+    const cleaned = loadCleanData<AuditLog>('melzinha_audit_logs');
+    if (cleaned.length === 0) {
+      return [{
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        user: 'Sistema Melzinha & Cia',
+        role: 'admin',
+        action: 'Inicialização de Produção',
+        details: 'Ambiente pronto para uso em produção, sem dados fictícios.',
+        ip: '187.54.12.89',
+        category: 'sistema',
+      }];
+    }
+    return cleaned;
   });
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    const saved = localStorage.getItem('melzinha_notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-  });
-
-  const [tickets, setTickets] = useState<SupportTicket[]>(() => {
-    const saved = localStorage.getItem('melzinha_tickets');
-    return saved ? JSON.parse(saved) : INITIAL_SUPPORT_TICKETS;
-  });
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => loadCleanData<NotificationItem>('melzinha_notifications'));
+  const [tickets, setTickets] = useState<SupportTicket[]>(() => loadCleanData<SupportTicket>('melzinha_tickets'));
 
   const [twoFactorActive, setTwoFactorActive] = useState<boolean>(() => {
     const saved = localStorage.getItem('melzinha_2fa');
@@ -85,6 +99,14 @@ export default function App() {
 
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [activeTab, setActiveTab] = useState<TabType>('agenda');
+
+  // Guard active tab based on role permissions
+  useEffect(() => {
+    const allowed = ROLE_ALLOWED_TABS[currentRole] || ['agenda'];
+    if (!allowed.includes(activeTab)) {
+      setActiveTab('agenda');
+    }
+  }, [currentRole, activeTab]);
 
   // Modals state
   const [partyModalOpen, setPartyModalOpen] = useState(false);
@@ -351,6 +373,25 @@ export default function App() {
     );
   };
 
+  const handleDeleteParty = (partyId: string) => {
+    setParties((prev) => prev.filter((p) => p.id !== partyId));
+    logAction('Exclusão de Festa', `Festa ID ${partyId} foi excluída pelo Administrador.`, 'agendamento');
+  };
+
+  const handleClearMockData = () => {
+    localStorage.removeItem('melzinha_parties');
+    localStorage.removeItem('melzinha_staff');
+    localStorage.removeItem('melzinha_clients');
+    localStorage.removeItem('melzinha_notifications');
+    localStorage.removeItem('melzinha_tickets');
+    setParties([]);
+    setStaffList([]);
+    setClients([]);
+    setNotifications([]);
+    setTickets([]);
+    logAction('Sanitização de Produção', 'Todos os dados de teste foram limpos com sucesso.', 'sistema');
+  };
+
   const unassignedPartiesCount = parties.filter(
     (p) => p.status !== 'cancelada' && p.recreadoresAssigned.length === 0
   ).length;
@@ -416,6 +457,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         partiesCount={parties.length}
         unassignedPartiesCount={unassignedPartiesCount}
+        currentRole={currentRole}
       />
 
       {/* Main Content View */}
@@ -431,6 +473,8 @@ export default function App() {
             }}
             onSelectPartyForPrint={(party) => setPrintParty(party)}
             onToggleChecklistItem={handleToggleChecklistItem}
+            onToggleRecreadorConfirmation={handleToggleRecreadorConfirmation}
+            onDeleteParty={handleDeleteParty}
             currentRole={currentRole}
           />
         )}
@@ -487,6 +531,7 @@ export default function App() {
             auditLogs={auditLogs}
             currentRole={currentRole}
             setCurrentRole={setCurrentRole}
+            onClearMockData={handleClearMockData}
           />
         )}
 

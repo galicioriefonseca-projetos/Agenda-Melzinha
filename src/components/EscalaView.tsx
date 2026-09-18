@@ -209,8 +209,35 @@ export function EscalaView({
         </div>
 
         {/* Staff Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredStaff.map((staff) => {
+        {staffList.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 text-center border border-amber-100 shadow-xs">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-3 shadow-inner">
+              <Users className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 font-display">
+              Equipe Pronta para Cadastro
+            </h3>
+            <p className="text-xs text-slate-600 max-w-md mx-auto mt-1 mb-5">
+              Nenhum recreador ou coordenador cadastrado ainda. Adicione os integrantes da sua equipe de animação para gerenciar escalas, especialidades (pintura facial, balões, oficinas) e controle de cachês.
+            </p>
+            {currentRole !== 'recreador' && (
+              <button
+                onClick={() => onOpenRecreadorModal()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02]"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Cadastrar Primeiro Recreador</span>
+              </button>
+            )}
+          </div>
+        ) : filteredStaff.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 text-center border border-amber-100 shadow-xs">
+            <p className="text-sm font-bold text-slate-800">Nenhum recreador encontrado com essa especialidade</p>
+            <p className="text-xs text-slate-600 mt-1">Selecione "Todas Especialidades" para visualizar a equipe completa.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredStaff.map((staff) => {
             // Count upcoming parties for this staff
             const assignedParties = parties.filter((p) =>
               p.recreadoresAssigned.some((a) => a.recreadorId === staff.id) && p.status !== 'cancelada'
@@ -295,6 +322,7 @@ export function EscalaView({
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Upcoming Escalas Matrix (Festas & Quem está escalado) */}

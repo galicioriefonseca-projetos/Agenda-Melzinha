@@ -107,10 +107,10 @@ export function Header({
                 className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-2 py-0.5"
                 title="Alternar Perfil de Acesso (RBAC)"
               >
-                <option value="admin">Admin (Melissa)</option>
-                <option value="coordenador">Coord. Recreação</option>
-                <option value="recreador">Recreador (Tio Pipoca)</option>
-                <option value="atendimento">Atendimento (Vendas)</option>
+                <option value="admin">Administrador Master</option>
+                <option value="coordenador">Coordenação de Recreação</option>
+                <option value="recreador">Recreador(a) de Campo</option>
+                <option value="atendimento">Atendimento & Vendas</option>
               </select>
             </div>
 

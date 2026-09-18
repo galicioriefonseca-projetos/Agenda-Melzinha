@@ -6,6 +6,7 @@ import {
   ShieldCheck, 
   LifeBuoy 
 } from 'lucide-react';
+import { UserRole } from '../types';
 
 export type TabType = 'agenda' | 'escalas' | 'clientes' | 'financeiro' | 'seguranca' | 'suporte';
 
@@ -14,18 +15,27 @@ interface NavigationProps {
   setActiveTab: (tab: TabType) => void;
   partiesCount: number;
   unassignedPartiesCount: number;
+  currentRole: UserRole;
 }
+
+const ROLE_ALLOWED_TABS: Record<UserRole, TabType[]> = {
+  admin: ['agenda', 'escalas', 'clientes', 'financeiro', 'seguranca', 'suporte'],
+  coordenador: ['agenda', 'escalas', 'clientes', 'suporte'],
+  recreador: ['agenda', 'suporte'],
+  atendimento: ['agenda', 'clientes', 'suporte'],
+};
 
 export function Navigation({
   activeTab,
   setActiveTab,
   partiesCount,
   unassignedPartiesCount,
+  currentRole,
 }: NavigationProps) {
-  const tabs = [
+  const allTabs = [
     {
       id: 'agenda' as TabType,
-      label: 'Agenda de Festas',
+      label: currentRole === 'recreador' ? 'Minhas Festas & Agenda' : 'Agenda de Festas',
       icon: Calendar,
       badge: partiesCount,
     },
@@ -58,6 +68,9 @@ export function Navigation({
       special: true,
     },
   ];
+
+  const allowedTabs = ROLE_ALLOWED_TABS[currentRole] || ROLE_ALLOWED_TABS.admin;
+  const tabs = allTabs.filter((t) => allowedTabs.includes(t.id));
 
   return (
     <nav className="bg-white border-b border-amber-100 shadow-2xs no-print">

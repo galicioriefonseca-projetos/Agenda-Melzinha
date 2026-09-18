@@ -148,8 +148,35 @@ export function ClientsView({
       </div>
 
       {/* Clients Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredClients.map((client) => {
+      {clients.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-amber-100 shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-3 shadow-inner">
+            <Contact2 className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 font-display">
+            Base de Clientes Pronta para Uso
+          </h3>
+          <p className="text-xs text-slate-600 max-w-md mx-auto mt-1 mb-5">
+            Nenhum cliente cadastrado ainda. Conforme novas festas forem agendadas ou contatos inseridos, o histórico e preferências das famílias ficarão organizados aqui.
+          </p>
+          {currentRole !== 'recreador' && (
+            <button
+              onClick={() => onOpenClientModal()}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02]"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Cadastrar Primeiro Cliente</span>
+            </button>
+          )}
+        </div>
+      ) : filteredClients.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-amber-100 shadow-xs">
+          <p className="text-sm font-bold text-slate-800">Nenhum cliente encontrado com os filtros</p>
+          <p className="text-xs text-slate-600 mt-1">Tente buscar por outro termo ou remova a tag selecionada.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredClients.map((client) => {
           // Find parties for this client
           const clientParties = parties.filter(
             (p) => p.clientName.toLowerCase() === client.name.toLowerCase() || client.partyHistoryIds.includes(p.id)
@@ -266,6 +293,7 @@ export function ClientsView({
           );
         })}
       </div>
+      )}
 
     </div>
   );
